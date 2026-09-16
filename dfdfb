@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TruSea Fish — Employee Attendance Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B3B57;
+    --navy-deep:#082A3F;
+    --teal:#0EA5B7;
+    --teal-light:#E4F7F9;
+    --bg:#F4F8FA;
+    --card:#FFFFFF;
+    --line:#E3EAEE;
+    --text:#16232C;
+    --muted:#5C7182;
+    --green:#1C8A54;
+    --green-bg:#E7F6EE;
+    --amber:#B4700A;
+    --amber-bg:#FDF3E1;
+    --red:#C4372E;
+    --red-bg:#FCEAE9;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(11,59,87,.06), 0 8px 24px rgba(11,59,87,.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:560px;
+    margin:0 auto;
+    padding:0 0 48px;
+  }
+
+  /* Header */
+  header{
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy-deep) 100%);
+    padding:28px 20px 60px;
+    position:relative;
+    overflow:hidden;
+  }
+  header::after{
+    content:"";
+    position:absolute;
+    right:-40px; top:-60px;
+    width:220px; height:220px;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(14,165,183,.35), transparent 70%);
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    position:relative;
+    z-index:1;
+  }
+  .brand svg{ width:40px; height:40px; flex-shrink:0; }
+  .brand-text h1{
+    margin:0;
+    font-family:'Manrope',sans-serif;
+    font-weight:800;
+    font-size:22px;
+    color:#fff;
+    letter-spacing:.2px;
+  }
+  .brand-text h1 span{ color:var(--teal); font-weight:800; }
+  .brand-text p{
+    margin:2px 0 0;
+    font-size:13px;
+    color:#B9CBD8;
+    font-weight:500;
+  }
+  .clock-row{
+    position:relative;
+    z-index:1;
+    display:flex;
+    gap:10px;
+    margin-top:22px;
+  }
+  .clock-pill{
+    flex:1;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:10px;
+    padding:10px 14px;
+  }
+  .clock-pill .k{
+    font-size:11px;
+    color:#9FB6C6;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+  .clock-pill .v{
+    font-size:16px;
+    color:#fff;
+    font-weight:700;
+    margin-top:2px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* Content shifted up over header curve */
+  main{
+    margin-top:-32px;
+    padding:0 16px;
+    position:relative;
+    z-index:2;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--line);
+    padding:22px;
+    margin-bottom:16px;
+  }
+  .card h2{
+    margin:0 0 4px;
+    font-family:'Manrope',sans-serif;
+    font-size:17px;
+    font-weight:700;
+    color:var(--text);
+  }
+  .card .hint{
+    margin:0 0 18px;
+    font-size:13.5px;
+    color:var(--muted);
+    line-height:1.4;
+  }
+
+  label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--text);
+    margin-bottom:6px;
+  }
+  select, textarea{
+    width:100%;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:13px 14px;
+    font-size:15px;
+    font-family:inherit;
+    color:var(--text);
+    background:#fff;
+    transition:border-color .15s;
+  }
+  select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--teal);
+  }
+  textarea{ resize:vertical; min-height:64px; }
+  .field{ margin-bottom:16px; }
+
+  /* GPS status block */
+  .gps-box{
+    border:1.5px dashed var(--line);
+    border-radius:10px;
+    padding:14px;
+    display:flex;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+  .gps-box.ok{ border-style:solid; border-color:#BFE6D6; background:var(--green-bg); }
+  .gps-box.err{ border-style:solid; border-color:#F1C6C2; background:var(--red-bg); }
+  .gps-icon{ font-size:20px; line-height:1; margin-top:1px; }
+  .gps-text .t1{ font-size:13.5px; font-weight:600; color:var(--text); }
+  .gps-text .t2{ font-size:12.5px; color:var(--muted); margin-top:3px; font-variant-numeric:tabular-nums; }
+
+  .btn{
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:12px;
+    font-family:'Manrope',sans-serif;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    letter-spacing:.2px;
+    transition:transform .1s, opacity .15s, background .15s;
+  }
+  .btn-primary{
+    background:var(--navy);
+    color:#fff;
+  }
+  .btn-primary:active{ transform:scale(.99); }
+  .btn-primary:disabled{
+    background:#9BB3C1;
+    cursor:not-allowed;
+  }
+
+  .status-msg{
+    border-radius:10px;
+    padding:14px 16px;
+    font-size:14px;
+    font-weight:500;
+    line-height:1.5;
+    display:none;
+    margin-top:16px;
+  }
+  .status-msg.show{ display:block; }
+  .status-msg.success{ background:var(--green-bg); color:var(--green); border:1px solid #BFE6D6; }
+  .status-msg.error{ background:var(--red-bg); color:var(--red); border:1px solid #F1C6C2; }
+  .status-msg.warn{ background:var(--amber-bg); color:var(--amber); border:1px solid #F3DBA6; }
+
+  .rule-card{
+    background:var(--teal-light);
+    border:1px solid #CBEBF0;
+  }
+  .rule-card h2{ color:var(--navy); }
+  .rule-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    font-size:13.5px;
+    color:var(--navy);
+    line-height:1.5;
+  }
+  .rule-row + .rule-row{ margin-top:10px; }
+  .rule-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:var(--teal);
+    margin-top:7px;
+    flex-shrink:0;
+  }
+
+  footer{
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+    padding:8px 20px 0;
+  }
+
+  @media (max-width:400px){
+    .clock-row{ flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 24C10 14 20 10 28 12C24 16 22 20 22 24C22 28 24 32 28 36C20 38 10 34 4 24Z" fill="#0EA5B7"/>
+        <path d="M28 12C34 13 40 17 44 24C40 31 34 35 28 36C31 32 33 28 33 24C33 20 31 16 28 12Z" fill="#FFFFFF" fill-opacity="0.9"/>
+        <circle cx="16" cy="21" r="1.6" fill="#082A3F"/>
+      </svg>
+      <div class="brand-text">
+        <h1>TruSea <span>Fish</span></h1>
+        <p>Employee Attendance Tracker</p>
+      </div>
+    </div>
+    <div class="clock-row">
+      <div class="clock-pill">
+        <div class="k">Today</div>
+        <div class="v" id="liveDate">—</div>
+      </div>
+      <div class="clock-pill">
+        <div class="k">Time</div>
+        <div class="v" id="liveTime">—</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <div class="card">
+      <h2>Mark your attendance</h2>
+      <p class="hint">Select your name, confirm your location, and mark attendance before 8:00 AM.</p>
+
+      <div class="field">
+        <label for="employee">Employee</label>
+        <select id="employee">
+          <option value="">Select your name</option>
+          <option value="Karthi">Karthi</option>
+          <option value="Santhosh">Santhosh</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="remarks">Remarks (optional)</label>
+        <textarea id="remarks" placeholder="e.g. On time, running late due to traffic..."></textarea>
+      </div>
+
+      <div class="gps-box" id="gpsBox">
+        <div class="gps-icon" id="gpsIcon">📍</div>
+        <div class="gps-text">
+          <div class="t1" id="gpsTitle">Fetching your location…</div>
+          <div class="t2" id="gpsCoords">Please allow location access when prompted.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="markBtn" disabled>Mark Attendance</button>
+
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
+
+    <div class="card rule-card">
+      <h2>Attendance rule</h2>
+      <div class="rule-row">
+        <div class="rule-dot"></div>
+        <div>Attendance can only be marked <strong>before 8:00 AM</strong>. Marking after 8:00 AM is not allowed and the day is recorded as Absent.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-dot"></div>
+        <div>If attendance isn't marked at all by 8:00 AM, Google Sheets automatically records <strong>Absent</strong> for that employee.</div>
+      </div>
+      <div class="rule-row">
+        <div class="rule-dot"></div>
+        <div>Each employee can mark attendance only once per day.</div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>TruSea Fish · Internal attendance system</footer>
+</div>
+
+<script>
+(function(){
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyVGKtvV8h4EOwPd4YoVj-162m6FqRRg-IKbN22pLxg9_iK4-AtD-gLU6LNEyRl6vZEhw/exec";
+
+  const employeeSel = document.getElementById('employee');
+  const remarksEl = document.getElementById('remarks');
+  const markBtn = document.getElementById('markBtn');
+  const statusMsg = document.getElementById('statusMsg');
+  const gpsBox = document.getElementById('gpsBox');
+  const gpsIcon = document.getElementById('gpsIcon');
+  const gpsTitle = document.getElementById('gpsTitle');
+  const gpsCoords = document.getElementById('gpsCoords');
+  const liveDate = document.getElementById('liveDate');
+  const liveTime = document.getElementById('liveTime');
+
+  let coords = null;      // {lat, lng}
+  let gpsReady = false;
+
+  // ---------- Live clock ----------
+  function pad(n){ return n < 10 ? '0' + n : n; }
+
+  function formatDateDDMMYYYY(d){
+    return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
+  }
+
+  function formatTime12h(d){
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const s = d.getSeconds();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12; if (h === 0) h = 12;
+    return pad(h) + ':' + pad(m) + ':' + pad(s) + ' ' + ampm;
+  }
+
+  function tick(){
+    const now = new Date();
+    liveDate.textContent = formatDateDDMMYYYY(now);
+    liveTime.textContent = formatTime12h(now);
+    updateButtonAvailability();
+  }
+  setInterval(tick, 1000);
+  tick();
+
+  // ---------- Attendance window (before 8:00 AM) ----------
+  function isBefore8AM(){
+    const now = new Date();
+    return now.getHours() < 8;
+  }
+
+  function updateButtonAvailability(){
+    const hasEmployee = !!employeeSel.value;
+    const withinWindow = isBefore8AM();
+    markBtn.disabled = !(hasEmployee && withinWindow && gpsReady) || markBtn.dataset.submitting === '1';
+
+    if (!withinWindow){
+      markBtn.textContent = 'Attendance Closed';
+    } else {
+      markBtn.textContent = 'Mark Attendance';
+    }
+  }
+
+  employeeSel.addEventListener('change', updateButtonAvailability);
+
+  // ---------- Duplicate prevention (per device, per day) ----------
+  function todayKey(name){
+    const d = new Date();
+    return 'trusea_att_' + name + '_' + d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+  }
+
+  function alreadyMarkedToday(name){
+    return localStorage.getItem(todayKey(name)) === '1';
+  }
+
+  function rememberMarked(name){
+    localStorage.setItem(todayKey(name), '1');
+  }
+
+  // ---------- Geolocation ----------
+  function requestLocation(){
+    if (!('geolocation' in navigator)){
+      gpsReady = false;
+      gpsBox.className = 'gps-box err';
+      gpsIcon.textContent = '⚠️';
+      gpsTitle.textContent = 'Location not supported';
+      gpsCoords.textContent = 'This device/browser does not support GPS location.';
+      updateButtonAvailability();
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function(pos){
+        coords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude
+        };
+        gpsReady = true;
+        gpsBox.className = 'gps-box ok';
+        gpsIcon.textContent = '✅';
+        gpsTitle.textContent = 'Location captured';
+        gpsCoords.textContent = 'Lat: ' + coords.lat.toFixed(6) + '  ·  Lng: ' + coords.lng.toFixed(6);
+        updateButtonAvailability();
+      },
+      function(err){
+        coords = null;
+        gpsReady = false;
+        gpsBox.className = 'gps-box err';
+        gpsIcon.textContent = '⚠️';
+        let msg = 'Could not get your location.';
+        if (err.code === err.PERMISSION_DENIED) msg = 'Location permission denied. Please allow location access in your browser settings and reload the page.';
+        else if (err.code === err.POSITION_UNAVAILABLE) msg = 'Location unavailable. Please check your device GPS/network.';
+        else if (err.code === err.TIMEOUT) msg = 'Location request timed out. Please try again.';
+        gpsTitle.textContent = 'Location error';
+        gpsCoords.textContent = msg;
+        updateButtonAvailability();
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  }
+  requestLocation();
+
+  // ---------- Status message helper ----------
+  function showStatus(type, text){
+    statusMsg.className = 'status-msg show ' + type;
+    statusMsg.textContent = text;
+  }
+  function hideStatus(){
+    statusMsg.className = 'status-msg';
+  }
+
+  // ---------- Submit ----------
+  markBtn.addEventListener('click', function(){
+    hideStatus();
+    const name = employeeSel.value;
+
+    if (!name){
+      showStatus('error', 'Please select your name first.');
+      return;
+    }
+
+    if (!isBefore8AM()){
+      showStatus('warn', 'Attendance closed. You are marked Absent because attendance was not marked before 8:00 AM.');
+      return;
+    }
+
+    if (!gpsReady || !coords){
+      showStatus('error', 'Location not available yet. Please allow location access and try again.');
+      requestLocation();
+      return;
+    }
+
+    if (alreadyMarkedToday(name)){
+      showStatus('warn', name + ', your attendance for today has already been recorded on this device.');
+      return;
+    }
+
+    const now = new Date();
+    const payload = {
+      date: formatDateDDMMYYYY(now),
+      time: formatTime12h(now).slice(0, 8) + ' ' + formatTime12h(now).slice(-2), // HH:MM:SS AM/PM
+      employee: name,
+      status: 'Present',
+      latitude: coords.lat,
+      longitude: coords.lng,
+      remarks: remarksEl.value.trim() || 'On time'
+    };
+
+    markBtn.dataset.submitting = '1';
+    markBtn.disabled = true;
+    markBtn.textContent = 'Submitting…';
+
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Apps Script Web Apps don't return CORS headers by default
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight
+      body: JSON.stringify(payload)
+    })
+    .then(function(){
+      rememberMarked(name);
+      showStatus('success', name + ', your attendance has been marked as Present at ' + payload.time + '. Location recorded.');
+      remarksEl.value = '';
+    })
+    .catch(function(err){
+      showStatus('error', 'Could not submit attendance. Please check your internet connection and try again.');
+    })
+    .finally(function(){
+      markBtn.dataset.submitting = '0';
+      updateButtonAvailability();
+    });
+  });
+
+  updateButtonAvailability();
+})();
+</script>
+</body>
+</html>
