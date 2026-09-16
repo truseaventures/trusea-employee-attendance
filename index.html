@@ -1,0 +1,143 @@
+/**
+ * TruSea Fish — Employee Attendance Tracker
+ * Google Apps Script backend
+ *
+ * WHAT THIS SCRIPT DOES
+ * 1. doPost(e)      -> receives attendance data from the website and writes a row to the Sheet.
+ * 2. markAbsentees() -> runs on a time-driven trigger at 8:00 AM every day. Any employee
+ *                       (Karthi, Santhosh) who has not already got a row for today is marked Absent.
+ *
+ * SETUP: see the deployment instructions given alongside this file.
+ */
+
+// ---- CONFIG ----------------------------------------------------------
+const SHEET_NAME = 'Attendance';                 // Sheet/tab name to write to
+const EMPLOYEES = ['Karthi', 'Santhosh'];         // The only two employees
+const CUTOFF_HOUR = 8;                            // 8 = 8:00 AM (24-hr, Sheet's timezone)
+
+// ---- helper: get or create the sheet with headers --------------------
+function getSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+  }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['Date', 'Time', 'Employee Name', 'Status', 'Latitude', 'Longitude', 'Remarks']);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// ---- helper: format today's date the same way the website does -------
+function formatDateDDMMYYYY_(d) {
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return dd + '/' + mm + '/' + yyyy;
+}
+
+function formatTime_(d) {
+  return Utilities.formatDate(d, Session.getScriptTimeZone() || 'Asia/Kolkata', 'hh:mm:ss a');
+}
+
+// ---- 1. Receive attendance submissions from the website ---------------
+function doPost(e) {
+  const sheet = getSheet_();
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+
+  try {
+    const data = JSON.parse(e.postData.contents);
+
+    const name = data.employee;
+    const todayStr = formatDateDDMMYYYY_(new Date());
+
+    // Prevent duplicate attendance for the same employee on the same date
+    const existing = findTodayRow_(sheet, name, todayStr);
+    if (existing) {
+      return jsonResponse_({ result: 'duplicate', message: name + ' already marked today.' });
+    }
+
+    sheet.appendRow([
+      data.date || todayStr,
+      data.time || formatTime_(new Date()),
+      name,
+      data.status || 'Present',
+      data.latitude != null ? data.latitude : '-',
+      data.longitude != null ? data.longitude : '-',
+      data.remarks || ''
+    ]);
+
+    return jsonResponse_({ result: 'success' });
+  } catch (err) {
+    return jsonResponse_({ result: 'error', message: err.message });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Simple GET so you can open the Web App URL in a browser to test it's live
+function doGet(e) {
+  return jsonResponse_({ result: 'ok', message: 'TruSea Fish Attendance API is running.' });
+}
+
+function jsonResponse_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ---- find if an employee already has a row for a given date -----------
+function findTodayRow_(sheet, name, dateStr) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return false;
+  const values = sheet.getRange(2, 1, lastRow - 1, 3).getValues(); // Date, Time, Name
+  for (let i = 0; i < values.length; i++) {
+    if (values[i][0] === dateStr && values[i][2] === name) return true;
+  }
+  return false;
+}
+
+// ---- 2. Automatic Absent marking, run daily at 8:00 AM by trigger -----
+function markAbsentees() {
+  const sheet = getSheet_();
+  const now = new Date();
+  const todayStr = formatDateDDMMYYYY_(now);
+  const timeStr = formatTime_(now);
+
+  EMPLOYEES.forEach(function (name) {
+    const already = findTodayRow_(sheet, name, todayStr);
+    if (!already) {
+      sheet.appendRow([
+        todayStr,
+        timeStr,
+        name,
+        'Absent',
+        '-',
+        '-',
+        'Attendance not marked before 8:00 AM'
+      ]);
+    }
+  });
+}
+
+// ---- OPTIONAL: run this once manually from the Apps Script editor -----
+// to create the 8:00 AM daily trigger programmatically instead of using
+// the UI. See the setup instructions for the UI-based (easier) option.
+function createDailyAbsentTrigger() {
+  // Remove any existing trigger for this function first, so you don't
+  // end up with duplicates if you run this more than once.
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'markAbsentees') {
+      ScriptApp.deleteTrigger(t);
+    }
+  });
+
+  ScriptApp.newTrigger('markAbsentees')
+    .timeBased()
+    .everyDays(1)
+    .atHour(CUTOFF_HOUR)
+    .nearMinute(0)
+    .create();
+}
